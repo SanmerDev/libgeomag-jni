@@ -35,7 +35,7 @@ fun configureTarget(id: String, fileName: String, bundleName: String) {
 
 configureTarget("darwin", "libjni.dylib", "libgeomag-jni.dylib")
 configureTarget("linux", "libjni.so", "libgeomag-jni.so")
-configureTarget("mingw", "libjni.dll", "libgeomag-jni.dll")
+configureTarget("mingw", "jni.dll", "geomag-jni.dll")
 
 task<Delete>("clean") {
     group = "build"
