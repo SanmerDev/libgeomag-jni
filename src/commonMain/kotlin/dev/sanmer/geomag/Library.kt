@@ -9,23 +9,23 @@ internal interface Library {
     fun load()
 
     companion object {
+        private const val PATH = "LIBGEOMAG_JNI_PATH"
+        private const val TMP = "geomag-jni"
+
         internal fun <T: Library> T.getLibrary(): String {
-            if (System.getenv("LIBGEOMAG_JNI_PATH") != null) {
-                return System.getenv("LIBGEOMAG_JNI_PATH")
+            System.getenv(PATH)?.let { path ->
+                return path
             }
 
-            val libraryURL = checkNotNull(javaClass.getResource("/${name}"))
-            if (libraryURL.protocol != "jar") {
+            val library = javaClass.getResource("/${name}")
+            if (library?.protocol != "jar") {
                 throw LinkageError("Load $name")
             }
 
-            val libsDir = Files.createTempDirectory("geomag-jni").toFile()
-            libsDir.deleteOnExit()
-
+            val libsDir = Files.createTempDirectory(TMP).toFile()
             val libraryFile = File(libsDir, name)
-            libraryFile.deleteOnExit()
 
-            val inputStream = libraryURL.openStream()
+            val inputStream = library.openStream()
             val outputStream = FileOutputStream(libraryFile)
 
             inputStream.use { input ->
