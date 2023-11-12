@@ -1,33 +1,30 @@
 use jni::objects::{JClass, JObject};
 use jni::sys::{jdouble, jint};
 use jni::JNIEnv;
-use libgeomag::{DateTime, GeodeticLocation, Geomag, MagneticField};
+use libgeomag::{DateTime, GeodeticLocation, MagneticField, ModelExt, IGRF, WMM};
 
 use crate::impl_helper::JNIEnvHelper;
 
 mod impl_ext;
 mod impl_helper;
 
-fn safe_calc<'local, F>(env: &mut JNIEnv<'local>, calc: F) -> JObject<'local>
-where
-    F: Fn() -> Option<MagneticField>,
-{
-    match calc() {
-        None => {
-            env.throw_new("java/lang/IllegalArgumentException", "Not within the validity period")
+fn throw_illegal_decimal<'local>(env: &mut JNIEnv<'local>, decimal: f64) -> JObject<'local> {
+    let msg = format!("{} is not within the valid period", decimal);
+    env.throw_new("java/lang/IllegalArgumentException", msg)
+        .unwrap();
+
+    JObject::null()
+}
+
+fn new_magnetic_field<'local>(env: &mut JNIEnv<'local>, m: &MagneticField) -> JObject<'local> {
+    match env.new_magnetic_field(&m) {
+        Ok(obj) => obj,
+        Err(err) => {
+            env.throw_new("java/lang/IllegalArgumentException", err.to_string())
                 .unwrap();
 
             JObject::null()
         }
-        Some(m) => match env.new_magnetic_field(&m) {
-            Ok(obj) => obj,
-            Err(err) => {
-                env.throw_new("java/lang/IllegalArgumentException", err.to_string())
-                    .unwrap();
-
-                JObject::null()
-            }
-        },
     }
 }
 
@@ -56,7 +53,15 @@ pub unsafe extern "system" fn Java_dev_sanmer_geomag_Geomag_wmm<'local>(
     decimal: jdouble,
 ) -> JObject<'local> {
     let l = GeodeticLocation::new(longitude, latitude, altitude);
-    safe_calc(&mut env, || Geomag::wmm_d(l, decimal))
+    let wmm = WMM::new(decimal);
+
+    match wmm {
+        None => throw_illegal_decimal(&mut env, decimal),
+        Some(wmm) => {
+            let m = wmm.single(l);
+            new_magnetic_field(&mut env, &m)
+        }
+    }
 }
 
 #[no_mangle]
@@ -69,5 +74,13 @@ pub unsafe extern "system" fn Java_dev_sanmer_geomag_Geomag_igrf<'local>(
     decimal: jdouble,
 ) -> JObject<'local> {
     let l = GeodeticLocation::new(longitude, latitude, altitude);
-    safe_calc(&mut env, || Geomag::igrf_d(l, decimal))
+    let igrf = IGRF::new(decimal);
+
+    match igrf {
+        None => throw_illegal_decimal(&mut env, decimal),
+        Some(igrf) => {
+            let m = igrf.single(l);
+            new_magnetic_field(&mut env, &m)
+        }
+    }
 }
