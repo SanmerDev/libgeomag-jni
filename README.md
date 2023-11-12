@@ -7,10 +7,15 @@ import dev.sanmer.geomag.Geomag
 
 fun main() {
     val t = Geomag.toDecimalYears(2023, 11, 1, 0, 0, 0)
-    val m = Geomag.wmm(102.0, 24.0, 1.9, t)
     
-    println("X = ${m.x}")
-    println("Y = ${m.y}")
-    println("Z = ${m.z}")
+    val w = Geomag.wmm(102.0, 24.0, 1.9, t)
+    println("X = ${w.x}")
+    println("Y = ${w.y}")
+    println("Z = ${w.z}")
+
+    val i = Geomag.igrf(102.0, 24.0, 1.9, t)
+    println("X = ${i.x}")
+    println("Y = ${i.y}")
+    println("Z = ${i.z}")
 }
 ```
